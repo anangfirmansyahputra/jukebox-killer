@@ -6,12 +6,8 @@ import Image from "next/image";
 import { ChangeEvent, useState } from "react";
 import ConfirmationModal from "./confirmation-modal";
 import { Button } from "@/components/ui/button";
-
-type Song = {
-  title: string;
-  artist: string;
-  genre: string;
-};
+import RecipientModal from "./recipient-modal";
+import { Song } from "@/types/types";
 
 type GroupedSong = {
   initial: string;
@@ -27,6 +23,7 @@ export default function ListSong() {
     }, {})
   ).sort((a, b) => a.initial.localeCompare(b.initial));
   const [filteredSongs, setFilteredSongs] = useState<GroupedSong[]>(songs);
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     const searchTerm = e.target.value.toLowerCase();
@@ -77,7 +74,11 @@ export default function ListSong() {
                           <p className="text-xs text-gray-500">{song.artist}</p>
                           <p className="text-sm text-gray-500">{song.genre}</p>
                         </div>
-                        <ConfirmationModal description="Are you sure you want to selected this song?">
+                        <ConfirmationModal
+                          onClick={() => setSelectedSong(song)}
+                          title={`${song.artist} - ${song.title}`}
+                          description="Are you sure you want to selected this song?"
+                        >
                           <Button variant={"pink"}>Confirm</Button>
                         </ConfirmationModal>
                       </div>
@@ -101,6 +102,8 @@ export default function ListSong() {
           </div>
         )}
       </div>
+
+      <RecipientModal setSelectedSong={setSelectedSong} song={selectedSong} />
     </div>
   );
 }

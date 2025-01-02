@@ -1,3 +1,9 @@
+import { Button } from "@/components/ui/button";
+
 export default function AdminPage() {
-  return <div>AdminPage</div>;
+  return (
+    <div>
+      <Button>Admin</Button>
+    </div>
+  );
 }

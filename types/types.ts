@@ -8,6 +8,12 @@ type Gender = {
   female: string;
 };
 
+export type Song = {
+  title: string;
+  artist: string;
+  genre: string;
+};
+
 export type ChooseLanguage = {
   firstName: string;
   lastName: string;

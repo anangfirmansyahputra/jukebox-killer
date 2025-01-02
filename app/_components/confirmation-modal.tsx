@@ -15,12 +15,14 @@ type ConfirmationModalProps = {
   children: React.ReactNode;
   title?: string;
   description?: string;
+  onClick?: () => void;
 };
 
 export default function ConfirmationModal({
   children,
   description,
   title,
+  onClick,
 }: ConfirmationModalProps) {
   return (
     <AlertDialog>
@@ -38,7 +40,7 @@ export default function ConfirmationModal({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction>Continue</AlertDialogAction>
+          <AlertDialogAction onClick={onClick}>Continue</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
