@@ -8,12 +8,6 @@ type Gender = {
   female: string;
 };
 
-export type Song = {
-  title: string;
-  artist: string;
-  genre: string;
-};
-
 export type ChooseLanguage = {
   firstName: string;
   lastName: string;
@@ -22,4 +16,27 @@ export type ChooseLanguage = {
   choose: string;
   flag: string;
   breadcrumbs: Breadcrumbs;
+};
+
+export type Event = {
+  id: number;
+  name: string;
+  description: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  languange: string;
+};
+
+export type Song = {
+  id: number;
+  title: string;
+  artist: string;
+  language: "en" | "fr" | "it" | "es";
+  genre: string;
+  duet: boolean;
+  sameSong: string;
+  available: boolean;
+  // createdAt: Date;
+  // updatedAt: Date;
 };

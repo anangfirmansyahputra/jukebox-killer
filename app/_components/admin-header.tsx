@@ -25,12 +25,18 @@ export default function AdminHeader({ breadcrumb }: AdminHeaderProps) {
             <div key={index} className="flex items-center gap-2">
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link
-                    href="/admin/live"
-                    className={`${!item.href && "text-pink-600 font-medium"}`}
-                  >
-                    {item.label}
-                  </Link>
+                  {item.href ? (
+                    <Link
+                      href={item.href}
+                      className={`${!item.href && "text-pink-600 font-medium"}`}
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-pink-600">
+                      {item.label}
+                    </span>
+                  )}
                 </BreadcrumbLink>
               </BreadcrumbItem>
               {item.href && <BreadcrumbSeparator />}

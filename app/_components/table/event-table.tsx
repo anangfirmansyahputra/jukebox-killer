@@ -1,7 +1,16 @@
 "use client";
 
-import { Check, Clock, X } from "lucide-react";
+import { Event } from "@/types/types";
 import { motion } from "framer-motion";
+import { Clock, Pencil, X } from "lucide-react";
+import Link from "next/link";
+import ConfirmModal from "../modal/confirm-modal";
+import { useServerAction } from "@/hooks/use-server-action";
+import { deleteEvent } from "@/actions/event";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import { FR, US } from "country-flag-icons/react/3x2";
+import { cn } from "@/lib/utils";
 
 const dedication = {
   id: 1,
@@ -16,14 +25,32 @@ const dedication = {
   photoURL: null,
 };
 
-export default function EventTable() {
+interface EventTable {
+  event: Event;
+}
+
+export default function EventTable({ event }: EventTable) {
+  const [runAction, isLoading] = useServerAction(deleteEvent);
+  const language = event.languange.split(",");
+  const router = useRouter();
   const handleStatusUpdate = (id: number, status: string) => {
     console.log(`Dedication ID ${id} updated to ${status}`);
   };
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString();
+  const formatTimestamp = (timestamp: Date) => {
+    return timestamp.toLocaleString();
+  };
+
+  const handleDelete = async () => {
+    const result = await runAction(event.id);
+
+    if (result) {
+      toast[result.success ? "success" : "error"](result.message);
+      if (result.success) {
+        router.push(`/admin/events`);
+        router.refresh();
+      }
+    }
   };
 
   return (
@@ -35,55 +62,57 @@ export default function EventTable() {
     >
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm text-gray-500 flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              {formatTimestamp(dedication.createdAt)}
-            </span>
-            {dedication.photoURL && (
-              <span className="text-blue-500">
-                <img
-                  src={dedication.photoURL}
-                  alt="Photo"
-                  className="w-4 h-4 rounded"
-                />
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm text-gray-500 flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                {formatTimestamp(event.createdAt)}
               </span>
-            )}
-          </div>
-
-          <h3 className="font-semibold text-gray-800">
-            From: {dedication.sender.firstName} {dedication.sender.lastName}
-          </h3>
-
-          <div className="mt-1 text-gray-600">
-            To:{" "}
-            {dedication.recipients
-              .map((r) => `${r.firstName} ${r.lastName}`)
-              .join(", ")}
-          </div>
-
-          {dedication.title && (
-            <div className="mt-2 font-medium text-gray-700">
-              {dedication.title}
             </div>
-          )}
 
-          <div className="mt-2 text-gray-600">{dedication.message}</div>
+            <h3 className="font-semibold text-gray-800 flex items-center">
+              {event.name}{" "}
+              <span
+                className={cn(
+                  "px-2 py-1 rounded-full ml-1 text-xs font-semibold",
+                  event.isActive
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                )}
+              >
+                {event.isActive ? "Active" : "Pause"}
+              </span>{" "}
+            </h3>
+
+            <div className="mt-2 text-gray-600">
+              {event.description || "No description"}
+            </div>
+
+            <div className="flex gap-2">
+              {language.includes("en") && <US className="w-12 h-12" />}
+              {language.includes("fr") && <FR className="w-12 h-12" />}
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-2">
-          <button
-            onClick={() => handleStatusUpdate(dedication.id, "approved")}
-            className="p-2 text-green-500 hover:bg-green-50 rounded-full transition-colors"
-          >
-            <Check className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => handleStatusUpdate(dedication.id, "rejected")}
-            className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {!isLoading && (
+            <Link
+              href={`/admin/events/${event.id}`}
+              className="p-2 text-yellow-500 hover:bg-green-50 rounded-full transition-colors"
+            >
+              <Pencil className="w-5 h-5" />
+            </Link>
+          )}
+          <ConfirmModal onClick={handleDelete}>
+            <button
+              disabled={isLoading}
+              onClick={() => handleStatusUpdate(dedication.id, "rejected")}
+              className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </ConfirmModal>
         </div>
       </div>
     </motion.div>

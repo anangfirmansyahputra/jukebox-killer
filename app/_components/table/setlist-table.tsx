@@ -1,9 +1,18 @@
 "use client";
 
+import { handleToggle, uploadSong } from "@/actions/song";
+import { useServerAction } from "@/hooks/use-server-action";
+import { Song } from "@/types/types";
 import { ES, FR, GB, IT } from "country-flag-icons/react/3x2";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, RefreshCw, Trash2, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import toast from "react-hot-toast";
+
+interface SetlistTableProps {
+  songs: Song[];
+}
 
 // Data dummy untuk LANGUAGES_FILES
 export const LANGUAGE_FILES = [
@@ -33,70 +42,6 @@ export const LANGUAGE_FILES = [
   },
 ];
 
-// Data dummy untuk lagu-lagu
-export const SONGS = [
-  {
-    id: 1,
-    artist: "Adele",
-    title: "Hello",
-    genre: "Pop",
-    language: "en",
-    isAvailable: true,
-  },
-  {
-    id: 2,
-    artist: "Daft Punk",
-    title: "Get Lucky",
-    genre: "Electronic",
-    language: "fr",
-    isAvailable: true,
-  },
-  {
-    id: 3,
-    artist: "Shakira",
-    title: "Hips Don't Lie",
-    genre: "Latin",
-    language: "es",
-    isAvailable: false,
-  },
-  {
-    id: 4,
-    artist: "Andrea Bocelli",
-    title: "Con Te Partiro",
-    genre: "Classical",
-    language: "it",
-    isAvailable: true,
-  },
-  {
-    id: 5,
-    artist: "Coldplay",
-    title: "Fix You",
-    genre: "Alternative",
-    language: "en",
-    isAvailable: true,
-  },
-  {
-    id: 6,
-    artist: "Edith Piaf",
-    title: "La Vie En Rose",
-    genre: "Chanson",
-    language: "fr",
-    isAvailable: false,
-  },
-];
-
-// Data dummy untuk groupedSongs (diurutkan berdasarkan huruf awal judul lagu)
-export const groupedSongs = {
-  A: [SONGS[0]],
-  C: [SONGS[4]],
-  D: [SONGS[1]],
-  E: [SONGS[5]],
-  H: [SONGS[2]],
-};
-
-// Data dummy untuk sortedLetters
-export const sortedLetters = Object.keys(groupedSongs).sort();
-
 const normalizeText = (text: string) => {
   return text
     .normalize("NFD")
@@ -104,101 +49,59 @@ const normalizeText = (text: string) => {
     .toUpperCase();
 };
 
-interface SongData {
-  id?: string;
-  title: string;
-  artist: string;
-  genre: string;
-  language: string;
-  gender?: "male" | "female";
-  duet?: boolean;
-  isAvailable?: boolean;
-}
-
-export default function SetlistTable() {
-  const [songs, setSongs] = useState<SongData[]>(SONGS);
-  // const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
-  // const [selectedGender, setSelectedGender] = useState<
-  //   "male" | "female" | null
-  // >(null);
-  // const [showDuets, setShowDuets] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+export default function SetlistTable({ songs }: SetlistTableProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: File }>(
-    {}
-  );
-  // const [searchTerm, setSearchTerm] = useState("");
-  // const [showFilters, setShowFilters] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [runAction, isPending] = useServerAction(uploadSong);
+  const [runAvailability, isPendingAvailability] =
+    useServerAction(handleToggle);
+  const router = useRouter();
 
-  // useEffect(() => {
-  //   loadSongs();
-  // }, []);
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    languageCode: string
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  // const loadSongs = async () => {
-  //   setIsLoading(true);
-  //   try {
-  //     const fetchedSongs = await songService.getSongs({ isAvailable: undefined });
-  //     // Sort songs by normalized artist name
-  //     const sortedSongs = fetchedSongs.sort((a, b) =>
-  //       normalizeText(a.artist).localeCompare(normalizeText(b.artist))
-  //     );
-  //     setSongs(sortedSongs);
-  //   } catch (error) {
-  //     toast.error('Failed to load songs');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+    if (
+      file.type !==
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ) {
+      toast.error("Please upload a valid Excel file (.xlsx)");
+      event.target.value = "";
+      return;
+    }
 
-  // const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, languageCode: string) => {
-  //   const file = event.target.files?.[0];
-  //   if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("language", languageCode);
 
-  //   if (file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-  //     toast.error('Please upload a valid Excel file (.xlsx)');
-  //     event.target.value = '';
-  //     return;
-  //   }
+    const res = await runAction(formData);
 
-  //   setSelectedFiles(prev => ({
-  //     ...prev,
-  //     [languageCode]: file
-  //   }));
-  //   setShowConfirmDialog(true);
-  // };
+    if (res) {
+      toast[res.success ? "success" : "error"](res.message);
+      event.target.value = "";
+      if (res.success) {
+        router.refresh();
+      }
+    }
+  };
 
-  // const handleImportConfirm = async () => {
-  //   setIsLoading(true);
-  //   try {
-  //     for (const [languageCode, file] of Object.entries(selectedFiles)) {
-  //       await songService.importSongsFromExcel(file, languageCode);
-  //     }
-  //     await loadSongs();
-  //     setShowConfirmDialog(false);
-  //     setSelectedFiles({});
-  //   } catch (error) {
-  //     toast.error('Failed to import songs');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  const handleToggleAvailability = async (
+    songId: number,
+    available: boolean
+  ) => {
+    const res = await runAvailability({
+      songId,
+      available,
+    });
 
-  // const handleToggleAvailability = async (songId: string, currentAvailability: boolean) => {
-  //   try {
-  //     await songService.toggleAvailability(songId, !currentAvailability);
-  //     setSongs(prevSongs =>
-  //       prevSongs.map(song =>
-  //         song.id === songId
-  //           ? { ...song, isAvailable: !currentAvailability }
-  //           : song
-  //       ).sort((a, b) => normalizeText(a.artist).localeCompare(normalizeText(b.artist)))
-  //     );
-  //     toast.success(`Song ${!currentAvailability ? 'enabled' : 'disabled'}`);
-  //   } catch (error) {
-  //     toast.error('Failed to update song availability');
-  //   }
-  // };
+    if (res) {
+      toast[res.success ? "success" : "error"](res.message);
+      router.refresh();
+    }
+  };
 
   const handleReset = async () => {
     setShowResetConfirm(true);
@@ -218,17 +121,14 @@ export default function SetlistTable() {
   // };
 
   // Group songs by first letter of normalized artist name
-  const groupedSongs = songs.reduce(
-    (acc: { [key: string]: SongData[] }, song) => {
-      const firstLetter = normalizeText(song.artist)[0];
-      if (!acc[firstLetter]) {
-        acc[firstLetter] = [];
-      }
-      acc[firstLetter].push(song);
-      return acc;
-    },
-    {}
-  );
+  const groupedSongs = songs.reduce((acc: { [key: string]: Song[] }, song) => {
+    const firstLetter = normalizeText(song.artist)[0];
+    if (!acc[firstLetter]) {
+      acc[firstLetter] = [];
+    }
+    acc[firstLetter].push(song);
+    return acc;
+  }, {});
 
   // Sort letters alphabetically
   const sortedLetters = Object.keys(groupedSongs).sort();
@@ -264,7 +164,7 @@ export default function SetlistTable() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleReset}
-            disabled={isLoading}
+            disabled={isPending || isPendingAvailability}
             className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <Trash2 className="w-4 h-4" />
@@ -292,17 +192,18 @@ export default function SetlistTable() {
               <input
                 type="file"
                 accept=".xlsx"
-                // onChange={(e) => handleFileSelect(e, code)}
+                onChange={(e) => handleFileSelect(e, code)}
                 className="hidden"
                 id={`fileInput-${code}`}
-                disabled={isLoading}
+                disabled={isPending || isPendingAvailability}
               />
               <label
                 htmlFor={`fileInput-${code}`}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg cursor-pointer hover:bg-blue-600 transition-colors text-sm w-full justify-center"
               >
                 <Upload className="w-4 h-4" />
-                {selectedFiles[code] ? "File Selected" : "Choose File"}
+                {/* {selectedFiles[code] ? "File Selected" : "Choose File"} */}
+                Choose File
               </label>
             </motion.div>
           ))}
@@ -321,14 +222,15 @@ export default function SetlistTable() {
         </div>
 
         {/* Loading State */}
-        {isLoading && (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        )}
+        {isPending ||
+          (isPendingAvailability && (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ))}
 
         {/* Song Groups */}
-        {!isLoading &&
+        {!isPending &&
           sortedLetters.map((letter) => (
             <div key={letter} className="border-t border-gray-200">
               {/* Letter Header */}
@@ -353,18 +255,16 @@ export default function SetlistTable() {
                   </div>
                   <div className="col-span-2 flex justify-center">
                     <button
-                      // onClick={() =>
-                      //   song.id &&
-                      //   handleToggleAvailability(song.id, !!song.isAvailable)
-                      // }
+                      onClick={() =>
+                        handleToggleAvailability(song.id, !song.available)
+                      }
                       className={`w-12 h-6 rounded-full transition-colors relative ${
-                        song.isAvailable ? "bg-green-500" : "bg-gray-300"
+                        song.available ? "bg-green-500" : "bg-gray-300"
                       }`}
                     >
-                      <motion.div
-                        layout
+                      <div
                         className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                          song.isAvailable ? "translate-x-6" : "translate-x-0"
+                          song.available ? "translate-x-6" : "translate-x-0"
                         }`}
                       />
                     </button>

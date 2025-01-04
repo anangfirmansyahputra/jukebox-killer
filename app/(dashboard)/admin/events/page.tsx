@@ -1,16 +1,9 @@
+import { getEvent } from "@/actions/event";
 import AdminHeader from "@/app/_components/admin-header";
-import { EventForm } from "@/app/_components/form/event-form";
-import DedicationTable from "@/app/_components/table/dedication-table";
 import EventTable from "@/app/_components/table/event-table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Calendar, MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Plus } from "lucide-react";
+import Link from "next/link";
 
 const breadcrumb = [
   {
@@ -23,12 +16,22 @@ const breadcrumb = [
   },
 ];
 
-export default function EventPage() {
+export default async function EventPage() {
+  const event = await getEvent();
+
   return (
     <div className="h-full">
       <AdminHeader breadcrumb={breadcrumb} />
-      <div className="p-6">
+      <div className="p-6 flex justify-between items-center">
         <h2 className="text-2xl font-bold">Event</h2>
+        {!event && (
+          <Link href={`/admin/events/create`}>
+            <Button>
+              <Plus />
+              Create Event
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="px-6">
@@ -57,14 +60,12 @@ export default function EventPage() {
           )} */}
 
           {/* Empty State */}
-          {/* {!loading && !error && dedications.length === 0 && (
-            <div className="p-8 text-center text-gray-500">
-              No pending dedications
-            </div>
-          )} */}
+          {!event && (
+            <div className="p-8 text-center text-gray-500">No event found</div>
+          )}
 
           {/* Dedications List */}
-          <EventTable />
+          {event && <EventTable event={event} />}
         </div>
       </div>
     </div>

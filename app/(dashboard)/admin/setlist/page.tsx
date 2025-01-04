@@ -1,3 +1,4 @@
+import { getSongs } from "@/actions/song";
 import AdminHeader from "@/app/_components/admin-header";
 import SetlistTable from "@/app/_components/table/setlist-table";
 
@@ -12,11 +13,13 @@ const breadcrumb = [
   },
 ];
 
-export default function SetlisPage() {
+export default async function SetlisPage() {
+  const songs = await getSongs();
+
   return (
     <div className="w-full relative">
       <AdminHeader breadcrumb={breadcrumb} />
-      <SetlistTable />
+      <SetlistTable songs={songs} />
     </div>
   );
 }
